@@ -28,7 +28,7 @@ public class InputManager : MonoBehaviour
     private InputAction calibrateAction;
 
     [Header("Calibration")]
-    public float deadZone = 0.02f;
+    public float deadZone = 0.12f;
     public float maxTilt = 0.7f;        // clamp [-1,1] gravity
     public float smoothTime = 0.1f;
 

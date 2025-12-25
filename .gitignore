@@ -100,9 +100,11 @@ InitTestScene*.unity*
 
 
 
+
 # User-specific files
 /Assets/Palmov Island
 /Assets/Adaptive Performance
 Assets/Samples
 Assets/TextMesh Pro
 Assets/Editor/com.unity.mobile.notifications
+

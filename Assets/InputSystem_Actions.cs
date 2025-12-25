@@ -478,7 +478,7 @@ public partial class @InputSystem_Actions: IInputActionCollection2, IDisposable
                     ""path"": ""<GravitySensor>/gravity"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": "";Touch"",
                     ""action"": ""Tilt_v2"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
