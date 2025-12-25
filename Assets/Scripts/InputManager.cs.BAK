@@ -1,0 +1,281 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+using TMPro;
+using Gyroscope = UnityEngine.InputSystem.Gyroscope;
+using AttitudeSensor = UnityEngine.InputSystem.AttitudeSensor;
+using AndroidGravitySensor = UnityEngine.InputSystem.Android.AndroidGravitySensor;
+using GravitySensor = UnityEngine.InputSystem.GravitySensor;
+
+
+public class InputManager : MonoBehaviour
+{
+    [SerializeField] private MonoBehaviour inputReceiver;
+    private IInputReceiver handler;
+
+    public TMP_Text text;
+    public TMP_Text text2;
+
+    public TMP_Text text3;
+
+    private InputAction tilt;
+
+    private InputAction gyroAction;
+    private InputAction jump;
+
+    private InputAction move;
+    private InputAction calibrate;
+
+    private void Awake()
+    {
+
+
+        // var playerInput = GetComponent<PlayerInput>();
+        // gyroAction = playerInput.actions["Gyro"];
+        // gyroAction.Enable();
+        // enable accelerometer
+        // InputSystem.EnableDevice(Accelerometer.current);
+        // InputSystem.EnableDevice(Gyroscope.current);
+        // InputSystem.EnableDevice(AttitudeSensor.current);
+        // InputSystem.EnableDevice(GravitySensor.current);
+
+
+
+
+        if (inputReceiver is IInputReceiver receiver)
+        {
+            handler = receiver;
+        }
+        else
+        {
+            Debug.LogError("Assigned object does not implement IInputReceiver!");
+        }
+
+
+    }
+
+    Vector3 lastGravity = Vector3.zero;
+
+    void Start()
+    {
+        // InputSystem.EnableDevice(Accelerometer.current);
+        // InputSystem.EnableDevice(Gyroscope.current);
+        // InputSystem.EnableDevice(AttitudeSensor.current);
+        // InputSystem.EnableDevice(GravitySensor.current);
+        // InputSystem.EnableDevice(LinearAccelerationSensor.current);
+
+        // InputSystem.EnableDevice(Gyroscope.current);
+        // InputSystem.EnableDevice(AttitudeSensor.current);
+#if UNITY_EDITOR
+        try
+        {
+            if (UnityEditor.EditorApplication.isRemoteConnected)
+            {
+                InputSystem.EnableDevice(Gyroscope.current);
+                InputSystem.EnableDevice(AttitudeSensor.current);
+                InputSystem.EnableDevice(AndroidGravitySensor.current);
+                InputSystem.EnableDevice(GravitySensor.current);
+                InputSystem.EnableDevice(LinearAccelerationSensor.current);
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError(e);
+        }
+#endif
+
+
+        InputSystem.EnableDevice(Gyroscope.current);
+        InputSystem.EnableDevice(AttitudeSensor.current);
+        InputSystem.EnableDevice(AndroidGravitySensor.current);
+        InputSystem.EnableDevice(GravitySensor.current);
+        InputSystem.EnableDevice(LinearAccelerationSensor.current);
+
+        tilt = InputSystem.actions.FindAction("Tilt");
+        // tilt.performed += Tilt;
+
+        gyroAction = InputSystem.actions.FindAction("Tilt_v2");
+        gyroAction.performed += Tilt_v2;
+        Debug.Log("Tilt_v2 action found: " + (gyroAction != null));
+
+        jump = InputSystem.actions.FindAction("Jump");
+        jump.performed += OnJump;
+        Debug.Log("Jump action found: " + (jump != null));
+
+        move = InputSystem.actions.FindAction("Move");
+        move.performed += OnMove;
+        Debug.Log("Move action found: " + (move != null));
+
+        calibrate = InputSystem.actions.FindAction("Calibrate");
+        calibrate.performed += ctx => Calibrate();
+        Debug.Log("Calibrate action found: " + (calibrate != null));
+
+    }
+
+
+
+    private void Update()
+    {
+#if UNITY_EDITOR
+        if (UnityEditor.EditorApplication.isRemoteConnected)
+        {
+            // Debug.Log("Unity Remote connected");
+
+            //check if gyro is enabled
+
+            InputSystem.EnableDevice(Gyroscope.current);
+            InputSystem.EnableDevice(AttitudeSensor.current);
+            InputSystem.EnableDevice(GravitySensor.current);
+            InputSystem.EnableDevice(AndroidGravitySensor.current);
+            InputSystem.EnableDevice(LinearAccelerationSensor.current);
+        }
+#endif
+        // if (!SystemInfo.supportsGyroscope) return;
+        // if (Gyroscope.current != null)
+        // {
+        // InputSystem.EnableDevice(Accelerometer.current);
+
+        // InputSystem.EnableDevice(GravitySensor.current);
+        // InputSystem.EnableDevice(LinearAccelerationSensor.current);
+
+        // text2.text = Gyroscope.current.enabled.ToString();
+        // text.text = Gyroscope.current.angularVelocity.ReadValue().ToString();
+        // if (Gyroscope.current.enabled)
+        // {
+        //     // Debug.Log($"InputSystem Gyro: {Gyroscope.current.angularVelocity.ReadValue()}");
+        //     handler.Move(Gyroscope.current.angularVelocity.ReadValue());
+        // }
+        // else
+        // {
+        //     Debug.Log("Gyroscope not enabled. Enabling now.");
+        //     InputSystem.EnableDevice(Gyroscope.current);
+        //     InputSystem.EnableDevice(AttitudeSensor.current);
+        //     InputSystem.EnableDevice(GravitySensor.current);
+        //     InputSystem.EnableDevice(LinearAccelerationSensor.current);
+
+        // }
+        // }
+    }
+
+    public void OnJump(InputAction.CallbackContext context)
+    {
+        Debug.Log("Jump");
+        text3.text = "Jump";
+        handler.Jump();
+    }
+
+    public void OnMove(InputAction.CallbackContext context)
+    {
+        Debug.Log("Move");
+        // InputSystem.EnableDevice(Gyroscope.current);
+        // InputSystem.EnableDevice(AttitudeSensor.current);
+
+        text2.text = "Move" + context.ReadValue<Vector2>().ToString();
+
+        handler.Move(context.ReadValue<Vector2>());
+    }
+
+    [SerializeField] float sensitivity = 0.05f;
+    // [SerializeField] float deadZone = 2f;
+
+    bool calibrated = false;
+
+
+
+
+
+    Vector3 referenceGravity;
+    Quaternion calibrationRotation = Quaternion.identity;
+
+    void Calibrate()
+    {
+
+        if (lastGravity == Vector3.zero)
+        {
+            Debug.LogError("No gravity data available for calibration.");
+            return;
+        }
+
+        Debug.Log("Calibrating with gravity: " + lastGravity.ToString());
+        calibrationRotation = Quaternion.FromToRotation(
+            lastGravity.normalized,
+            Vector3.down
+        );
+
+        calibrated = true;
+    }
+
+
+    Quaternion integratedRotation = Quaternion.identity;
+    // bool calibrated = false;
+
+    [SerializeField] float gyroSensitivity = 1.0f;
+    [SerializeField] float driftCorrection = 0.01f;
+    Vector3 referenceUp;
+
+    [Header("Movement")]
+    [SerializeField] float gravityStrength = 20f;
+    [SerializeField] float maxTilt = 0.7f;        // clamp [-1,1] gravity
+    [SerializeField] float smoothTime = 0.1f;
+    [SerializeField] float maxSpeed = 10f;
+    [SerializeField] float deadZone = 0.02f;
+
+    Vector3 smoothTilt;
+    Vector3 tiltVelocity;
+
+    float ApplyDeadZone(float value)
+    {
+        Debug.Log($"DeadZone check: |{value}| < {deadZone}");
+        return Mathf.Abs(value) < deadZone ? 0f : value;
+    }
+    public void Tilt_v2(InputAction.CallbackContext context)
+    {
+
+        Vector3 gravity = context.ReadValue<Vector3>();
+        lastGravity = context.ReadValue<Vector3>();
+
+
+        if (!calibrated)
+        {
+            Calibrate();
+            return;
+        }
+
+        // Vector3 gravity = context.ReadValue<Vector3>(); // [-1, 1]
+
+        // Apply calibration rotation
+        Vector3 calibratedGravity = calibrationRotation * gravity;
+
+        // Project onto ground plane
+        Vector3 tilt = new Vector3(
+            calibratedGravity.x,
+            0f,
+            -calibratedGravity.z
+        );
+
+
+        tilt.x = ApplyDeadZone(tilt.x);
+        tilt.z = ApplyDeadZone(tilt.z);
+
+
+
+        // Clamp tilt strength
+        tilt = Vector3.ClampMagnitude(tilt, maxTilt);
+
+        // Smooth input
+        smoothTilt = Vector3.SmoothDamp(
+            smoothTilt,
+            tilt,
+            ref tiltVelocity,
+            smoothTime
+        );
+        Debug.Log("Tilt_v2 input: " + gravity.ToString() + " tilt: " + tilt.ToString() + " smoothTilt: " + smoothTilt.ToString());
+
+        handler.Move(smoothTilt);
+        text.text = "Tilt_v2" + smoothTilt.ToString();
+    }
+
+}
+
+
+
+
